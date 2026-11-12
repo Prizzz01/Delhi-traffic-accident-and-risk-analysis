@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delhi Traffic Accident & Risk Analysis Dashboard | SafeRoads Intelligence</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            plum: {
+              deep: '#190019',
+              card: '#2B124C',
+              border: '#522B5B',
+              accent: '#854F6C',
+              blush: '#DFB6B2',
+              cream: '#FBE4D8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Chart.js 4 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Styles in Twilight Plum Palette -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    code, .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased">
+
+  <!-- Solid Anchored Top Navigation Bar -->
+  <header class="bg-[#2B124C] border-b border-[#522B5B] shadow-md z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Solidly Anchored Brand & Title (No floating particles) -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-[#522B5B] border border-[#854F6C] flex items-center justify-center text-[#FBE4D8] text-base font-bold shadow-sm">
+          <i class="fa-solid fa-traffic-light"></i>
+        </div>
+        <div>
+          <span class="text-base sm:text-lg font-extrabold tracking-tight text-[#FBE4D8] block leading-tight">
+            Delhi SafeRoads Analytics
+          </span>
+          <span class="text-[11px] text-[#DFB6B2] block leading-tight">
+            Traffic Accident & Risk Intelligence Platform
+          </span>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs (GIS Map removed) -->
+      <nav class="hidden md:flex items-center gap-1 bg-[#190019] p-1 rounded-xl border border-[#522B5B]">
+        <button data-tab-target="overview" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-bold bg-[#854F6C] text-[#FBE4D8] shadow-sm transition">
+          <i class="fa-solid fa-chart-pie mr-1.5"></i>Analytics Overview
+        </button>
+        <button data-tab-target="predictor" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-bold text-[#DFB6B2] hover:text-[#FBE4D8] hover:bg-[#522B5B] transition">
+          <i class="fa-solid fa-brain mr-1.5"></i>AI Risk Predictor
+        </button>
+        <button data-tab-target="explorer" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-bold text-[#DFB6B2] hover:text-[#FBE4D8] hover:bg-[#522B5B] transition">
+          <i class="fa-solid fa-table-list mr-1.5"></i>Data Explorer
+        </button>
+        <button data-tab-target="report" class="tab-btn px-4 py-1.5 rounded-lg text-xs font-bold text-[#DFB6B2] hover:text-[#FBE4D8] hover:bg-[#522B5B] transition">
+          <i class="fa-solid fa-book-open mr-1.5"></i>Report & Insights
+        </button>
+      </nav>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button onclick="openModal('addIncidentModal')" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl btn-plum text-xs font-bold transition">
+          <i class="fa-solid fa-plus text-[11px]"></i>
+          <span>Add Incident</span>
+        </button>
+
+        <button id="exportCsvBtn" class="px-3 py-1.5 rounded-xl border border-[#522B5B] bg-[#190019] hover:bg-[#522B5B] text-[#DFB6B2] hover:text-[#FBE4D8] text-xs font-bold transition flex items-center gap-1.5" title="Export CSV">
+          <i class="fa-solid fa-download text-xs text-[#DFB6B2]"></i>
+          <span class="hidden sm:inline">Export CSV</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Mobile Navigation Bar -->
+    <div class="md:hidden flex items-center justify-around border-t border-[#522B5B] px-2 py-1.5 bg-[#190019] overflow-x-auto">
+      <button data-tab-target="overview" class="px-3 py-1 rounded-lg text-[11px] font-bold text-[#FBE4D8]">Overview</button>
+      <button data-tab-target="predictor" class="px-3 py-1 rounded-lg text-[11px] font-bold text-[#DFB6B2]">Predictor</button>
+      <button data-tab-target="explorer" class="px-3 py-1 rounded-lg text-[11px] font-bold text-[#DFB6B2]">Explorer</button>
+      <button data-tab-target="report" class="px-3 py-1 rounded-lg text-[11px] font-bold text-[#DFB6B2]">Report</button>
+    </div>
+  </header>
+
+  <!-- Interactive Filters Strip -->
+  <section id="filtersBar" class="bg-[#2B124C]/80 border-b border-[#522B5B] px-4 sm:px-6 lg:px-8 py-3.5">
+    <div class="max-w-7xl mx-auto flex flex-col gap-2.5">
+      
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-extrabold text-[#FBE4D8] uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-sliders text-[#DFB6B2]"></i> Corridor Filters:
+          </span>
+          <span id="activeFiltersCount" class="hidden text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#854F6C] text-[#FBE4D8] border border-[#DFB6B2]">
+            0 Active
+          </span>
+        </div>
+
+        <!-- Filter Dropdowns Grid -->
+        <div class="flex flex-wrap items-center gap-2 flex-grow sm:flex-grow-0">
+          
+          <!-- Area Filter -->
+          <select id="filterArea" class="plum-select">
+            <option value="All">All Delhi Corridors (10 Zones)</option>
+            <option value="Lajpat Nagar">Lajpat Nagar (Ring Rd)</option>
+            <option value="Saket">Saket (South Corridor)</option>
+            <option value="Karol Bagh">Karol Bagh (Central)</option>
+            <option value="Punjabi Bagh">Punjabi Bagh (West)</option>
+            <option value="Rohini">Rohini (North West)</option>
+            <option value="Chandni Chowk">Chandni Chowk (Old Delhi)</option>
+            <option value="Kashmere Gate">Kashmere Gate (ISBT)</option>
+            <option value="Connaught Place">Connaught Place (CP)</option>
+            <option value="Dwarka">Dwarka (Expressway)</option>
+            <option value="Janakpuri">Janakpuri (District Ctr)</option>
+          </select>
+
+          <!-- Severity Filter -->
+          <select id="filterSeverity" class="plum-select">
+            <option value="All">All Severity Levels</option>
+            <option value="High">🔴 High Severity</option>
+            <option value="Medium">🟠 Medium Severity</option>
+            <option value="Low">🟢 Low Severity</option>
+          </select>
+
+          <!-- Weather Filter -->
+          <select id="filterWeather" class="plum-select">
+            <option value="All">All Weather Conditions</option>
+            <option value="Rainy">🌧️ Rainy</option>
+            <option value="Fog">🌫️ Fog</option>
+            <option value="Smog">🏭 Smog</option>
+            <option value="Storm">⛈️ Storm</option>
+            <option value="Clear">☀️ Clear</option>
+          </select>
+
+          <!-- Vehicle Type Filter -->
+          <select id="filterVehicle" class="plum-select">
+            <option value="All">All Vehicle Classes</option>
+            <option value="Bike">🏍️ Bike</option>
+            <option value="Car">🚗 Car</option>
+            <option value="Bus">🚌 Bus</option>
+            <option value="Truck">🚛 Truck</option>
+            <option value="Auto">🛺 Auto</option>
+            <option value="E-Rickshaw">⚡ E-Rickshaw</option>
+          </select>
+
+          <!-- Violation Filter -->
+          <select id="filterViolation" class="plum-select">
+            <option value="All">All Driver Violations</option>
+            <option value="Wrong Side">Wrong Side Driving</option>
+            <option value="Over Speeding">Over Speeding</option>
+            <option value="Signal Jump">Signal Jump</option>
+            <option value="Drunk Driving">Drunk Driving</option>
+            <option value="No Seatbelt">No Seatbelt</option>
+            <option value="No Helmet">No Helmet</option>
+          </select>
+
+          <!-- Time Window Filter -->
+          <select id="filterTimeSlot" class="plum-select">
+            <option value="All">All 24 Hours</option>
+            <option value="morning">Morning (07:00 - 12:00)</option>
+            <option value="afternoon">Afternoon (12:00 - 17:00)</option>
+            <option value="evening">Evening Rush (17:00 - 22:00)</option>
+            <option value="night">Night Hours (22:00 - 07:00)</option>
+          </select>
+
+          <!-- Reset Button -->
+          <button id="resetFiltersBtn" class="px-3 py-1.5 rounded-lg border border-[#522B5B] bg-[#190019] hover:bg-[#522B5B] text-[#DFB6B2] hover:text-[#FBE4D8] text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>Reset All</span>
+          </button>
+
+        </div>
+
+        <div class="text-xs font-mono text-[#DFB6B2] flex items-center gap-1.5">
+          <span id="filteredCountBadge">Showing 500 of 500 records</span>
+        </div>
+
+      </div>
+
+      <!-- Active Filter Chips Bar -->
+      <div id="activeChipsContainer" class="hidden"></div>
+
+    </div>
+  </section>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: OVERVIEW & ANALYTICS DASHBOARD      -->
+    <!-- ========================================== -->
+    <div id="tab-overview" class="tab-view space-y-6">
+
+      <!-- Grounded Page Title Card (Firmly anchored, not floating in air) -->
+      <div class="plum-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-[#522B5B] text-[#FBE4D8] border border-[#854F6C]">
+              Traffic Intelligence Platform
+            </span>
+            <span class="text-xs text-[#DFB6B2] font-semibold">• Urban Road Safety Analytics</span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-[#FBE4D8] tracking-tight">
+            Delhi Traffic Accident & Risk Analysis Dashboard
+          </h2>
+          <p class="text-xs sm:text-sm text-[#DFB6B2] max-w-2xl">
+            Comprehensive accident telemetry, corridor risk profiling, and AI hazard prediction for urban road safety.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="px-3.5 py-1.5 rounded-xl bg-[#190019] border border-[#522B5B] text-xs font-bold text-[#FBE4D8] flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-shield-halved text-[#DFB6B2]"></i> Road Safety Command Hub
+          </span>
+        </div>
+      </div>
+
+      <!-- Hero KPI Cards Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- KPI 1: Total Accidents -->
+        <div class="plum-card p-5 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-[#DFB6B2] uppercase tracking-wider">Total Recorded Crashes</span>
+            <div class="w-9 h-9 rounded-xl bg-[#854F6C]/30 border border-[#854F6C] flex items-center justify-center text-[#FBE4D8]">
+              <i class="fa-solid fa-car-burst"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <h3 id="kpiTotalAccidents" class="text-3xl font-extrabold text-[#FBE4D8] tracking-tight">500</h3>
+            <span class="text-xs font-bold text-[#FBE4D8] bg-[#522B5B] px-2 py-0.5 rounded-full border border-[#854F6C]">Verified</span>
+          </div>
+          <p class="text-[11px] text-[#DFB6B2] mt-2">Across 10 key transit sectors in Delhi</p>
+        </div>
+
+        <!-- KPI 2: Total Casualties -->
+        <div class="plum-card p-5 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-[#DFB6B2] uppercase tracking-wider">Total Casualties</span>
+            <div class="w-9 h-9 rounded-xl bg-[#854F6C]/30 border border-[#854F6C] flex items-center justify-center text-[#DFB6B2]">
+              <i class="fa-solid fa-kit-medical"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <h3 id="kpiTotalCasualties" class="text-3xl font-extrabold text-[#FBE4D8] tracking-tight">1,438</h3>
+            <span class="text-xs font-bold text-[#DFB6B2]">Injured + Dead</span>
+          </div>
+          <div class="flex items-center gap-3 mt-2 text-xs">
+            <span class="text-[#DFB6B2]">Injuries: <strong id="kpiTotalInjuries" class="text-[#FBE4D8] font-bold">1,193</strong></span>
+            <span class="text-[#DFB6B2]">Deaths: <strong id="kpiTotalFatalities" class="text-rose-400 font-bold">245</strong></span>
+          </div>
+        </div>
+
+        <!-- KPI 3: High Severity Rate -->
+        <div class="plum-card p-5 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-[#DFB6B2] uppercase tracking-wider">High Risk Severity</span>
+            <div class="w-9 h-9 rounded-xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-300">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <h3 id="kpiHighRiskRate" class="text-3xl font-extrabold text-rose-400 tracking-tight">31.2%</h3>
+            <span class="text-xs text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-full border border-rose-500/40">156 Cases</span>
+          </div>
+          <p class="text-[11px] text-[#DFB6B2] mt-2">Required trauma / intensive hospitalization</p>
+        </div>
+
+        <!-- KPI 4: Fatality Ratio -->
+        <div class="plum-card p-5 relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-bold text-[#DFB6B2] uppercase tracking-wider">Fatality Ratio</span>
+            <div class="w-9 h-9 rounded-xl bg-[#522B5B] border border-[#DFB6B2] flex items-center justify-center text-[#FBE4D8]">
+              <i class="fa-solid fa-skull-crossbones"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <h3 id="kpiFatalityRate" class="text-3xl font-extrabold text-[#FBE4D8] tracking-tight">17.0%</h3>
+            <span class="text-xs text-[#DFB6B2] bg-[#522B5B] px-2 py-0.5 rounded-full border border-[#854F6C]">Of Casualties</span>
+          </div>
+          <p class="text-[11px] text-[#DFB6B2] mt-2">Highest on highways & ring road sectors</p>
+        </div>
+
+      </div>
+
+      <!-- Secondary Intelligence Banner -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        
+        <div class="p-3.5 rounded-xl bg-[#2B124C] border border-[#522B5B] flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-300 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-fire"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[10px] uppercase font-bold text-[#DFB6B2] block truncate">Top Hotspot</span>
+            <span id="kpiTopHotspot" class="text-xs font-bold text-[#FBE4D8] block truncate">Lajpat Nagar</span>
+            <span id="kpiTopHotspotSub" class="text-[10px] text-rose-400">65 recorded cases</span>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-[#2B124C] border border-[#522B5B] flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-[#854F6C]/40 text-[#DFB6B2] flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[10px] uppercase font-bold text-[#DFB6B2] block truncate">Peak Crash Window</span>
+            <span id="kpiPeakHour" class="text-xs font-bold text-[#FBE4D8] block truncate">18:00 - 21:00</span>
+            <span id="kpiPeakHourSub" class="text-[10px] text-[#DFB6B2]">Evening rush peak</span>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-[#2B124C] border border-[#522B5B] flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-[#522B5B] text-[#FBE4D8] flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-ban"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[10px] uppercase font-bold text-[#DFB6B2] block truncate">Deadliest Violation</span>
+            <span id="kpiTopViolation" class="text-xs font-bold text-[#FBE4D8] block truncate">Wrong Side</span>
+            <span id="kpiTopViolationSub" class="text-[10px] text-rose-400">59 fatal cases</span>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-[#2B124C] border border-[#522B5B] flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-[#854F6C]/30 text-[#DFB6B2] flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-smog"></i>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[10px] uppercase font-bold text-[#DFB6B2] block truncate">Weather Risk</span>
+            <span class="text-xs font-bold text-[#FBE4D8] block truncate">Rain & Winter Fog</span>
+            <span class="text-[10px] text-[#DFB6B2]">113 total fatalities</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Chart Row 1: Hourly Distribution & Area Ranking -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Hourly Trend Chart -->
+        <div class="plum-card p-5 flex flex-col">
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-[#522B5B]">
+            <div>
+              <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-[#DFB6B2]"></i>
+                Hourly Crash Volume & High Severity Curve
+              </h3>
+              <p class="text-xs text-[#DFB6B2]">Crash frequency by hour of day (00:00 - 23:00)</p>
+            </div>
+            <span class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#854F6C]/30 text-[#FBE4D8] border border-[#854F6C]">
+              Evening Spike (18-21h)
+            </span>
+          </div>
+          <div class="relative flex-1 min-h-[280px]">
+            <canvas id="hourlyChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Area Stacked Severity Chart -->
+        <div class="plum-card p-5 flex flex-col">
+          <div class="flex items-center justify-between pb-3 mb-3 border-b border-[#522B5B]">
+            <div>
+              <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-[#DFB6B2]"></i>
+                Area Hotspot Ranking & Severity Composition
+              </h3>
+              <p class="text-xs text-[#DFB6B2]">High, Medium & Low severity distribution by Delhi zone</p>
+            </div>
+            <span class="text-xs text-[#DFB6B2] font-semibold">10 Corridors</span>
+          </div>
+          <div class="relative flex-1 min-h-[280px]">
+            <canvas id="areaChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Chart Row 2: Weather, Vehicle & Violations -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Weather vs Casualties -->
+        <div class="plum-card p-5 flex flex-col">
+          <div class="pb-3 mb-3 border-b border-[#522B5B]">
+            <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+              <i class="fa-solid fa-cloud-rain text-[#DFB6B2]"></i>
+              Weather Casualty Multiplier
+            </h3>
+            <p class="text-xs text-[#DFB6B2]">Injuries vs Fatalities by weather condition</p>
+          </div>
+          <div class="relative flex-1 min-h-[240px]">
+            <canvas id="weatherChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Vehicle Type Share -->
+        <div class="plum-card p-5 flex flex-col">
+          <div class="pb-3 mb-3 border-b border-[#522B5B]">
+            <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+              <i class="fa-solid fa-car text-[#DFB6B2]"></i>
+              Vehicle Involvements
+            </h3>
+            <p class="text-xs text-[#DFB6B2]">Crash count breakdown by vehicle class</p>
+          </div>
+          <div class="relative flex-1 min-h-[240px]">
+            <canvas id="vehicleChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Violation Breakdown -->
+        <div class="plum-card p-5 flex flex-col">
+          <div class="pb-3 mb-3 border-b border-[#522B5B]">
+            <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+              <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+              Top Violation Factors
+            </h3>
+            <p class="text-xs text-[#DFB6B2]">Distribution of primary recorded driver violations</p>
+          </div>
+          <div class="relative flex-1 min-h-[240px]">
+            <canvas id="violationChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Chart Row 3: Monthly Trajectory -->
+      <div class="plum-card p-5">
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-[#522B5B]">
+          <div>
+            <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-[#DFB6B2]"></i>
+              Delhi Accident Trajectory Timeline
+            </h3>
+            <p class="text-xs text-[#DFB6B2]">Monthly pattern analysis across all 12 months</p>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-[#DFB6B2] font-semibold">
+            <span class="w-3 h-3 rounded-full bg-[#DFB6B2]"></span> Monthly Crashes
+          </div>
+        </div>
+        <div class="relative h-[220px]">
+          <canvas id="monthlyChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Down Section Component 1: Corridor Risk Matrix & Municipal Action Board -->
+      <div class="plum-card p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#522B5B]">
+          <div>
+            <h3 class="text-base font-extrabold text-[#FBE4D8] flex items-center gap-2">
+              <i class="fa-solid fa-road text-[#DFB6B2]"></i>
+              Delhi Corridors Safety & Intervention Priority Matrix
+            </h3>
+            <p class="text-xs text-[#DFB6B2]">Comprehensive risk scores, casualty proportions, and recommended municipal engineering actions</p>
+          </div>
+          <span class="text-xs font-semibold px-3 py-1 rounded-full bg-[#190019] text-[#DFB6B2] border border-[#522B5B]">
+            All 10 Monitored Corridors
+          </span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse plum-table">
+            <thead>
+              <tr class="text-[11px] font-bold uppercase tracking-wider text-[#DFB6B2]">
+                <th class="py-3 px-4">Rank</th>
+                <th class="py-3 px-4">Corridor / Zone</th>
+                <th class="py-3 px-4">Total Crashes</th>
+                <th class="py-3 px-4">Casualties</th>
+                <th class="py-3 px-4">High Severity %</th>
+                <th class="py-3 px-4">Deadliest Violation</th>
+                <th class="py-3 px-4">Risk Rating</th>
+                <th class="py-3 px-4">Smart City Recommended Intervention</th>
+                <th class="py-3 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="corridorMatrixBody">
+              <!-- Injected dynamically by app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Down Section Component 2: 4-Card Analytical Insights Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <div class="plum-card p-4 space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-[#522B5B] text-[#FBE4D8] flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-gauge-high"></i>
+          </div>
+          <h4 class="font-bold text-sm text-[#FBE4D8]">Velocity Paradox</h4>
+          <p class="text-xs text-[#DFB6B2] leading-relaxed">
+            High-density urban corridors report frequent minor collisions, but low-density highway sectors exhibit <strong>3.2x higher fatality rates</strong> due to excessive vehicle speeds.
+          </p>
+        </div>
+
+        <div class="plum-card p-4 space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-[#522B5B] text-[#FBE4D8] flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-smog"></i>
+          </div>
+          <h4 class="font-bold text-sm text-[#FBE4D8]">Winter Fog & Smog</h4>
+          <p class="text-xs text-[#DFB6B2] leading-relaxed">
+            Visibility drops below 150m during winter months correlate with a <strong>45% surge in multi-vehicle pileups</strong> and high trauma hospitalizations.
+          </p>
+        </div>
+
+        <div class="plum-card p-4 space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-[#522B5B] text-rose-300 flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+          </div>
+          <h4 class="font-bold text-sm text-[#FBE4D8]">Wrong-Side Hazard</h4>
+          <p class="text-xs text-[#DFB6B2] leading-relaxed">
+            Wrong-way driving accounted for <strong>59 fatalities (highest recorded)</strong>, heavily concentrated around Saket and Karol Bagh flyover exit ramps.
+          </p>
+        </div>
+
+        <div class="plum-card p-4 space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-[#522B5B] text-[#DFB6B2] flex items-center justify-center text-sm font-bold">
+            <i class="fa-solid fa-business-time"></i>
+          </div>
+          <h4 class="font-bold text-sm text-[#FBE4D8]">Peak Evening Rush</h4>
+          <p class="text-xs text-[#DFB6B2] leading-relaxed">
+            Commuter fatigue and congested lane discipline cause <strong>28% of all 24-hour crashes</strong> between 18:00 and 21:00 across mixed traffic arteries.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Down Section Component 3 & 4: Live Recent Feed & Emergency Response Contacts -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Live Recent Incidents Feed -->
+        <div class="lg:col-span-7 plum-card p-5 space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-[#522B5B]">
+            <div>
+              <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-[#DFB6B2]"></i>
+                Recent Incidents Telemetry Feed
+              </h3>
+              <p class="text-xs text-[#DFB6B2]">Latest verified crash logs matching active filter parameters</p>
+            </div>
+            <button onclick="switchTab('explorer')" class="text-xs font-bold text-[#DFB6B2] hover:text-[#FBE4D8] underline">
+              View All 500 Records
+            </button>
+          </div>
+          <div id="recentIncidentsFeed" class="space-y-2">
+            <!-- Injected by app.js -->
+          </div>
+        </div>
+
+        <!-- Emergency & Traffic Police Helpline Hub -->
+        <div class="lg:col-span-5 plum-card p-5 space-y-4">
+          <div class="pb-2 border-b border-[#522B5B]">
+            <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+              <i class="fa-solid fa-headset text-[#DFB6B2]"></i>
+              Emergency Helpline & Police SOP Hub
+            </h3>
+            <p class="text-xs text-[#DFB6B2]">Official 24x7 Delhi Traffic Police & Emergency Medical Services</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="p-3 rounded-xl bg-[#190019]/70 border border-[#522B5B]">
+              <span class="text-[10px] uppercase font-bold text-[#DFB6B2] block">Traffic Police Hotline</span>
+              <span class="text-base font-extrabold text-[#FBE4D8] block font-mono">1095</span>
+              <span class="text-[10px] text-[#DFB6B2]">Toll-Free Helpline</span>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#190019]/70 border border-[#522B5B]">
+              <span class="text-[10px] uppercase font-bold text-[#DFB6B2] block">Emergency Response</span>
+              <span class="text-base font-extrabold text-rose-300 block font-mono">112</span>
+              <span class="text-[10px] text-[#DFB6B2]">PCR Rapid Unit</span>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#190019]/70 border border-[#522B5B]">
+              <span class="text-[10px] uppercase font-bold text-[#DFB6B2] block">Medical Ambulance</span>
+              <span class="text-base font-extrabold text-[#FBE4D8] block font-mono">102</span>
+              <span class="text-[10px] text-[#DFB6B2]">Trauma Services</span>
+            </div>
+
+            <div class="p-3 rounded-xl bg-[#190019]/70 border border-[#522B5B]">
+              <span class="text-[10px] uppercase font-bold text-[#DFB6B2] block">National Highway</span>
+              <span class="text-base font-extrabold text-[#FBE4D8] block font-mono">1033</span>
+              <span class="text-[10px] text-[#DFB6B2]">NHAI Patrol Help</span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-[#190019]/60 border border-[#522B5B] text-xs text-[#DFB6B2] space-y-1">
+            <strong class="text-[#FBE4D8] block"><i class="fa-solid fa-shield-halved mr-1 text-[#DFB6B2]"></i> Delhi SafeRoads SOP Protocol:</strong>
+            <p class="text-[11px] leading-relaxed">
+              In case of critical highway collisions, secure the perimeter 50m upstream with reflective warning triangles before emergency services arrive.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: AI RISK PREDICTOR & ROUTE ADVISOR   -->
+    <!-- ========================================== -->
+    <div id="tab-predictor" class="tab-view hidden space-y-6">
+
+      <div class="plum-card p-6">
+        <h2 class="text-lg font-extrabold text-[#FBE4D8] flex items-center gap-2">
+          <i class="fa-solid fa-brain text-[#DFB6B2]"></i>
+          AI Crash Risk Assessment & Predictive Engine
+        </h2>
+        <p class="text-xs text-[#DFB6B2] mt-1">
+          Simulate environmental conditions, transit times, corridor choices, and violation risk to calculate real-time danger probabilities.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Input Simulation Parameters -->
+        <div class="lg:col-span-5 plum-card p-6 space-y-4">
+          <h3 class="text-sm font-bold text-[#FBE4D8] border-b border-[#522B5B] pb-2 flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-[#DFB6B2]"></i>
+            Simulation Inputs
+          </h3>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#DFB6B2] mb-1">Route Corridor / Area</label>
+            <select id="predArea" class="w-full plum-select">
+              <option value="Lajpat Nagar">Lajpat Nagar (Ring Road Interchange)</option>
+              <option value="Saket" selected>Saket (South Delhi Arterial)</option>
+              <option value="Karol Bagh">Karol Bagh (High Congestion Central)</option>
+              <option value="Punjabi Bagh">Punjabi Bagh (West Delhi Ring Rd)</option>
+              <option value="Rohini">Rohini (North West Express Corridor)</option>
+              <option value="Chandni Chowk">Chandni Chowk (High Pedestrian Core)</option>
+              <option value="Kashmere Gate">Kashmere Gate (ISBT Transit Flyover)</option>
+              <option value="Connaught Place">Connaught Place (Inner/Outer Circle)</option>
+              <option value="Dwarka">Dwarka (Sub-City Expressway)</option>
+              <option value="Janakpuri">Janakpuri (District Center Corridor)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#DFB6B2] mb-1">Travel Hour of Day</label>
+            <div class="flex items-center gap-3">
+              <input id="predTime" type="range" min="0" max="23" value="19" class="w-full accent-[#DFB6B2]" oninput="document.getElementById('predTimeLabel').innerText = `${String(this.value).padStart(2,'0')}:00`" />
+              <span id="predTimeLabel" class="font-mono text-xs font-bold px-2 py-1 bg-[#190019] rounded border border-[#522B5B] min-w-[54px] text-center text-[#FBE4D8]">19:00</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#DFB6B2] mb-1">Weather Condition</label>
+            <select id="predWeather" class="w-full plum-select">
+              <option value="Fog" selected>🌫️ Dense Winter Fog (Severe Low Visibility)</option>
+              <option value="Rainy">🌧️ Heavy Monsoon Rain (Slippery Pavements)</option>
+              <option value="Storm">⛈️ Dust / Thunder Storm (High Wind Gusts)</option>
+              <option value="Smog">🏭 High Winter Smog (Poor Air / Irritation)</option>
+              <option value="Clear">☀️ Clear Daytime / Normal</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#DFB6B2] mb-1">Vehicle Type</label>
+            <select id="predVehicle" class="w-full plum-select">
+              <option value="Bike" selected>🏍️ Two-Wheeler / Bike (High Vulnerability)</option>
+              <option value="Car">🚗 Passenger Car</option>
+              <option value="Bus">🚌 City / Transit Bus</option>
+              <option value="Truck">🚛 Heavy Freight Truck</option>
+              <option value="Auto">🛺 Auto-Rickshaw</option>
+              <option value="E-Rickshaw">⚡ E-Rickshaw</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-[#DFB6B2] mb-1">Observed Driver Violation</label>
+            <select id="predViolation" class="w-full plum-select">
+              <option value="Over Speeding" selected>⚡ Over Speeding</option>
+              <option value="Wrong Side">🚨 Wrong Side Driving</option>
+              <option value="Signal Jump">🚦 Red Light Signal Jump</option>
+              <option value="Drunk Driving">🍺 Drunk Driving</option>
+              <option value="No Helmet">🛡️ Riding Without Helmet</option>
+              <option value="No Seatbelt">🪑 Riding Without Seatbelt</option>
+            </select>
+          </div>
+
+          <button id="runPredictorBtn" class="w-full py-2.5 rounded-xl btn-plum font-bold text-xs transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-calculator"></i>
+            Recalculate Risk Probabilities
+          </button>
+        </div>
+
+        <!-- AI Output Results -->
+        <div class="lg:col-span-7 plum-card p-6 space-y-6">
+          <div class="flex items-center justify-between border-b border-[#522B5B] pb-3">
+            <div>
+              <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple text-[#DFB6B2]"></i>
+                Risk Intelligence Output
+              </h3>
+              <p class="text-xs text-[#DFB6B2]">Derived from 500 verified accident telemetry records</p>
+            </div>
+            <span id="predLevelBadge" class="px-3 py-1 rounded-full text-xs font-bold text-rose-300 bg-rose-500/20 border border-rose-500">
+              Extreme High Danger
+            </span>
+          </div>
+
+          <!-- Risk Score Bar -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-[#DFB6B2]">Calculated Crash Danger Index</span>
+              <span id="predScoreVal" class="text-2xl font-black text-rose-400 font-mono">82%</span>
+            </div>
+            <div class="w-full h-3.5 bg-[#190019] rounded-full overflow-hidden p-0.5 border border-[#522B5B]">
+              <div id="predScoreBar" class="h-full bg-gradient-to-r from-[#DFB6B2] via-[#854F6C] to-rose-500 rounded-full transition-all duration-500" style="width: 82%"></div>
+            </div>
+          </div>
+
+          <!-- Estimated Odds Cards -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="p-4 rounded-xl bg-[#190019]/70 border border-[#522B5B]">
+              <div class="flex items-center justify-between text-[#DFB6B2] mb-1">
+                <span class="text-xs font-semibold text-[#DFB6B2]">Injury Probability</span>
+                <i class="fa-solid fa-user-injured text-sm"></i>
+              </div>
+              <h4 id="predInjuryOdds" class="text-2xl font-extrabold text-[#FBE4D8] font-mono">78%</h4>
+              <p class="text-[11px] text-[#DFB6B2] mt-1">High collision trauma risk</p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-[#190019]/70 border border-[#522B5B]">
+              <div class="flex items-center justify-between text-rose-400 mb-1">
+                <span class="text-xs font-semibold text-[#DFB6B2]">Fatality Probability</span>
+                <i class="fa-solid fa-skull text-sm"></i>
+              </div>
+              <h4 id="predFatalOdds" class="text-2xl font-extrabold text-rose-400 font-mono">31%</h4>
+              <p class="text-[11px] text-[#DFB6B2] mt-1">Multi-vehicle impact index</p>
+            </div>
+          </div>
+
+          <!-- AI Safety Advisory & Police Protocols -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-[#DFB6B2] flex items-center gap-1.5">
+              <i class="fa-solid fa-shield-halved text-[#DFB6B2]"></i>
+              Recommended Preventive Measures & Police SOP
+            </h4>
+            <ul id="predAdvisoryList" class="space-y-2">
+              <!-- Injected dynamically -->
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: LIVE INCIDENT DATA EXPLORER         -->
+    <!-- ========================================== -->
+    <div id="tab-explorer" class="tab-view hidden space-y-4">
+      
+      <div class="plum-card p-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-[#FBE4D8] flex items-center gap-2">
+            <i class="fa-solid fa-table-list text-[#DFB6B2]"></i>
+            Delhi Incident Data Explorer (500 Records)
+          </h2>
+          <p class="text-xs text-[#DFB6B2]">Search, filter, inspect, and export verified road incident telemetry</p>
+        </div>
+
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <div class="relative flex-1 sm:w-64">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[#DFB6B2] text-xs"></i>
+            <input id="tableSearchInput" type="text" placeholder="Search area, vehicle, violation..." class="w-full bg-[#190019] border border-[#522B5B] rounded-lg pl-8 pr-3 py-1.5 text-xs text-[#FBE4D8] placeholder-[#DFB6B2]/50 focus:outline-none focus:border-[#DFB6B2]" />
+          </div>
+
+          <button onclick="openModal('addIncidentModal')" class="px-3 py-1.5 rounded-lg btn-plum text-xs font-bold transition shrink-0 flex items-center gap-1">
+            <i class="fa-solid fa-plus text-[10px]"></i> Add Incident
+          </button>
+        </div>
+      </div>
+
+      <!-- Data Table Card -->
+      <div class="plum-card overflow-hidden shadow-2xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse plum-table">
+            <thead>
+              <tr class="text-[11px] font-bold uppercase tracking-wider text-[#DFB6B2]">
+                <th class="py-3 px-4">Incident ID</th>
+                <th class="py-3 px-4">Date & Time</th>
+                <th class="py-3 px-4">Area / Corridor</th>
+                <th class="py-3 px-4">Vehicle</th>
+                <th class="py-3 px-4">Violation Type</th>
+                <th class="py-3 px-4">Weather</th>
+                <th class="py-3 px-4">Severity</th>
+                <th class="py-3 px-4 text-center">Injuries</th>
+                <th class="py-3 px-4 text-center">Fatalities</th>
+              </tr>
+            </thead>
+            <tbody id="incidentTableBody">
+              <!-- Injected by app.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="flex items-center justify-between px-4 py-3 bg-[#190019]/60 border-t border-[#522B5B] text-xs text-[#DFB6B2]">
+          <span id="tablePageInfo">Showing 1 - 15 of 500</span>
+          <div class="flex items-center gap-2">
+            <button id="prevPageBtn" class="px-3 py-1.5 rounded-lg border border-[#522B5B] bg-[#2B124C] hover:bg-[#522B5B] text-[#FBE4D8] text-xs disabled:opacity-40 disabled:cursor-not-allowed transition">
+              <i class="fa-solid fa-chevron-left text-[10px] mr-1"></i> Prev
+            </button>
+            <button id="nextPageBtn" class="px-3 py-1.5 rounded-lg border border-[#522B5B] bg-[#2B124C] hover:bg-[#522B5B] text-[#FBE4D8] text-xs disabled:opacity-40 disabled:cursor-not-allowed transition">
+              Next <i class="fa-solid fa-chevron-right text-[10px] ml-1"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: RESEARCH REPORT & INSIGHTS          -->
+    <!-- ========================================== -->
+    <div id="tab-report" class="tab-view hidden space-y-6">
+
+      <!-- Report Header -->
+      <div class="plum-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-extrabold uppercase tracking-wider text-[#DFB6B2] mb-1 block">Data Analytics Academic Project</span>
+          <h2 class="text-xl font-extrabold text-[#FBE4D8]">Delhi Traffic and Accident Risk Analysis Report</h2>
+          <p class="text-xs text-[#DFB6B2] mt-1">
+            Smart City Road Safety Initiative • Delhi Traffic Intelligence Project
+          </p>
+        </div>
+
+        <button id="printReportBtn" class="px-3.5 py-2 rounded-xl btn-plum text-xs font-bold transition flex items-center gap-2">
+          <i class="fa-solid fa-print"></i>
+          <span>Print / Save PDF Report</span>
+        </button>
+      </div>
+
+      <!-- Problem Statement & Objectives -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div class="plum-card p-6 space-y-3 print-block">
+          <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2 border-b border-[#522B5B] pb-2">
+            <i class="fa-solid fa-bullseye text-rose-400"></i>
+            Problem Statement
+          </h3>
+          <p class="text-xs text-[#DFB6B2] leading-relaxed">
+            Delhi experiences a disproportionately high number of road accidents due to rapid motorization, extreme vehicle density, mixed traffic typologies, and severe seasonal environmental anomalies like winter smog and monsoon aquaplaning.
+          </p>
+          <p class="text-xs text-[#DFB6B2] leading-relaxed">
+            Civic authorities and traffic planning bodies often lack actionable data intelligence to pinpoint dangerous intersections and proactively prevent fatal outcomes.
+          </p>
+        </div>
+
+        <div class="plum-card p-6 space-y-3 print-block">
+          <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2 border-b border-[#522B5B] pb-2">
+            <i class="fa-solid fa-compass text-[#DFB6B2]"></i>
+            Core Project Objectives
+          </h3>
+          <ul class="text-xs text-[#DFB6B2] space-y-1.5 list-disc list-inside">
+            <li>Identify accident-prone clusters and high-risk corridors in Delhi.</li>
+            <li>Analyze time-of-day crash distributions and peak hazard curves.</li>
+            <li>Evaluate environmental factors (fog, rain, smog) on severity.</li>
+            <li>Quantify vehicle vulnerability and correlate primary traffic violations.</li>
+            <li>Provide actionable evidence-based engineering and enforcement policies.</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <!-- 5-Step Analytics Workflow -->
+      <div class="plum-card p-6 print-block">
+        <h3 class="text-sm font-bold text-[#FBE4D8] mb-4 flex items-center gap-2 border-b border-[#522B5B] pb-2">
+          <i class="fa-solid fa-diagram-project text-[#DFB6B2]"></i>
+          End-to-End Analytics Pipeline
+        </h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+          <div class="p-3 rounded-xl bg-[#190019]/70 border border-[#522B5B] space-y-1">
+            <span class="font-bold text-[#FBE4D8]">1. Data Ingestion</span>
+            <p class="text-[#DFB6B2] text-[11px]">500 accident logs capturing date, time, vehicle, weather, severity, injuries & deaths.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-[#190019]/70 border border-[#522B5B] space-y-1">
+            <span class="font-bold text-[#DFB6B2]">2. Cleaning & Prep</span>
+            <p class="text-[#DFB6B2] text-[11px]">Handled missing values, standardized weather taxonomies, formatted 24h timestamps.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-[#190019]/70 border border-[#522B5B] space-y-1">
+            <span class="font-bold text-[#FBE4D8]">3. Transformation</span>
+            <p class="text-[#DFB6B2] text-[11px]">Created risk scoring weights, peak-hour indices, casualty ratios, and corridor indices.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-[#190019]/70 border border-[#522B5B] space-y-1">
+            <span class="font-bold text-[#DFB6B2]">4. BI Modeling</span>
+            <p class="text-[#DFB6B2] text-[11px]">Built DAX KPI measures, time-series curves, and multi-dimensional matrices in Power BI.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-[#190019]/70 border border-[#522B5B] space-y-1">
+            <span class="font-bold text-[#FBE4D8]">5. Web Interface</span>
+            <p class="text-[#DFB6B2] text-[11px]">Engineered this standalone web interface with AI risk simulator and real-time filters.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5 Strategic Policy Recommendations -->
+      <div class="plum-card p-6 space-y-4 print-block">
+        <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2 border-b border-[#522B5B] pb-2">
+          <i class="fa-solid fa-lightbulb text-[#DFB6B2]"></i>
+          Strategic Municipal & Traffic Management Recommendations
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          
+          <div class="p-3.5 rounded-xl bg-[#190019]/70 border border-[#522B5B] space-y-1">
+            <h4 class="font-bold text-[#FBE4D8] flex items-center gap-1.5">
+              <i class="fa-solid fa-camera text-[#DFB6B2]"></i>
+              1. Automated Speed Enforcement on Outer Rings
+            </h4>
+            <p class="text-[#DFB6B2] text-[11px]">
+              Highways and low-density sectors exhibit fewer collisions but higher fatality rates due to excessive velocity. Deploy automated ANPR speed cameras along Lajpat Nagar & Punjabi Bagh flyovers.
+            </p>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-[#190019]/70 border border-[#522B5B] space-y-1">
+            <h4 class="font-bold text-[#FBE4D8] flex items-center gap-1.5">
+              <i class="fa-solid fa-smog text-[#DFB6B2]"></i>
+              2. Dynamic Winter Fog VMS Warning Systems
+            </h4>
+            <p class="text-[#DFB6B2] text-[11px]">
+              Fog and smog amplify accident severity by 45%. Integrate Variable Message Signs (VMS) with automated visibility sensors on arterial entryways (ISBT, Kashmere Gate, Dwarka).
+            </p>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-[#190019]/70 border border-[#522B5B] space-y-1">
+            <h4 class="font-bold text-[#FBE4D8] flex items-center gap-1.5">
+              <i class="fa-solid fa-road-barrier text-rose-300"></i>
+              3. Anti-Wrong-Side Physical Dividers
+            </h4>
+            <p class="text-[#DFB6B2] text-[11px]">
+              Wrong side driving accounted for 59 fatalities (highest among all violations). Install high-visibility median barriers and tire-puncturing one-way spikes at Saket and Karol Bagh market ramps.
+            </p>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-[#190019]/70 border border-[#522B5B] space-y-1">
+            <h4 class="font-bold text-[#FBE4D8] flex items-center gap-1.5">
+              <i class="fa-solid fa-clock text-[#DFB6B2]"></i>
+              4. Peak Evening Rush Signal Optimization
+            </h4>
+            <p class="text-[#DFB6B2] text-[11px]">
+              Maximum incident frequency concentrates between 18:00 and 21:00. Transition static traffic timers to adaptive AI-controlled signal phasing at major intersections.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Add Incident Modal -->
+  <div id="addIncidentModal" class="fixed inset-0 z-50 bg-[#190019]/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="plum-card max-w-lg w-full p-6 shadow-2xl relative space-y-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-[#522B5B]">
+        <div>
+          <h3 class="text-sm font-bold text-[#FBE4D8] flex items-center gap-2">
+            <i class="fa-solid fa-plus-circle text-[#DFB6B2]"></i>
+            Record New Traffic Incident
+          </h3>
+          <p class="text-xs text-[#DFB6B2]">Append a verified crash incident to the active analysis pipeline</p>
+        </div>
+        <button onclick="closeModal('addIncidentModal')" class="text-[#DFB6B2] hover:text-[#FBE4D8] text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="addIncidentForm" class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-[#DFB6B2] mb-1">Date</label>
+            <input id="newDate" type="date" required class="w-full bg-[#190019] border border-[#522B5B] rounded-lg p-2 text-[#FBE4D8]" />
+          </div>
+          <div>
+            <label class="block font-semibold text-[#DFB6B2] mb-1">Time (24h)</label>
+            <input id="newTime" type="time" value="18:30" required class="w-full bg-[#190019] border border-[#522B5B] rounded-lg p-2 text-[#FBE4D8]" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-[#DFB6B2] mb-1">Area / Corridor</label>
+            <select id="newArea" class="w-full bg-[#190019] border border-[#522B5B] rounded-lg p-2 text-[#FBE4D8]">
+              <option value="Lajpat Nagar">Lajpat Nagar</option>
+              <option value="Saket">Saket</option>
+              <option value="Karol Bagh">Karol Bagh</option>
+              <option value="Punjabi Bagh">Punjabi Bagh</option>
+              <option value="Rohini">Rohini</option>
+              <option value="Chandni Chowk">Chandni Chowk</option>
+              <option value="Kashmere Gate">Kashmere Gate</option>
+              <option value="Connaught Place">Connaught Place</option>
+              <option value="Dwarka">Dwarka</option>
+              <option value="Janakpuri">Janakpuri</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-[#DFB6B2] mb-1">Vehicle Type</label>
+            <select id="newVehicle" class="w-full bg-[#190019] border border-[#522B5B] rounded-lg p-2 text-[#FBE4D8]">
+              <option value="Bike">Bike</option>
+              <option value="Car">Car</option>
+              <option value="Bus">Bus</option>
+              <option value="Truck">Truck</option>
+              <option value="Auto">Auto</option>
+              <option value="E-Rickshaw">E-Rickshaw</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-[#DFB6B2] mb-1">Observed Violation</label>
+            <select id="newViolation" class="w-full bg-[#190019] border border-[#522B5B] rounded-lg p-2 text-[#FBE4D8]">
+              <option value="Signal Jump">Signal Jump</option>
+              <option value="Wrong Side">Wrong Side</option>
+              <option value="Over Speeding">Over Speeding</option>
+              <option value="Drunk Driving">Drunk Driving</option>
+              <option value="No Seatbelt">No Seatbelt</option>
+              <option value="No Helmet">No Helmet</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-[#DFB6B2] mb-1">Weather</label>
+            <select id="newWeather" class="w-full bg-[#190019] border border-[#522B5B] rounded-lg p-2 text-[#FBE4D8]">
+              <option value="Clear">Clear</option>
+              <option value="Rainy">Rainy</option>
+              <option value="Fog">Fog</option>
+              <option value="Smog">Smog</option>
+              <option value="Storm">Storm</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-[#DFB6B2] mb-1">Severity</label>
+            <select id="newSeverity" class="w-full bg-[#190019] border border-[#522B5B] rounded-lg p-2 text-[#FBE4D8]">
+              <option value="High">High</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-[#DFB6B2] mb-1">Injuries</label>
+            <input id="newInjuries" type="number" min="0" value="2" class="w-full bg-[#190019] border border-[#522B5B] rounded-lg p-2 text-[#FBE4D8]" />
+          </div>
+          <div>
+            <label class="block font-semibold text-[#DFB6B2] mb-1">Fatalities</label>
+            <input id="newFatalities" type="number" min="0" value="0" class="w-full bg-[#190019] border border-[#522B5B] rounded-lg p-2 text-[#FBE4D8]" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-[#522B5B]">
+          <button type="button" onclick="closeModal('addIncidentModal')" class="px-3 py-1.5 rounded-lg border border-[#522B5B] text-[#DFB6B2] hover:text-[#FBE4D8]">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg btn-plum font-bold">Submit Record</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#522B5B] bg-[#2B124C] py-4 px-4 text-center text-xs text-[#DFB6B2]">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <span class="text-[#DFB6B2]">Delhi SafeRoads Intelligence Platform • Urban Road Safety Analytics</span>
+      <span class="text-[#DFB6B2]">Twilight Plum Theme • Interactive Traffic & Accident Risk Assessment Engine</span>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="accidents_data.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
